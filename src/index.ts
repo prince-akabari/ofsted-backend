@@ -39,7 +39,7 @@ checkDatabaseConnection();
 // Middleware
 app.use(
   cors({
-    origin: "http://localhost:8080",
+    origin: "https://ofsted-frontend.vercel.app",
     credentials: true,
   })
 );
