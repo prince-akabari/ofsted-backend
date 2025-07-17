@@ -1,0 +1,131 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  admin
+  staff
+  readonly
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      Role
+  status    String   @default("inactive")
+  lastLogin DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Staff {
+  id                          String   @id @default(uuid())
+  name                        String
+  role                        String
+  email                       String   @unique
+  status                      String
+  dbsCheckStatus              String
+  dbsExpiryDate               DateTime
+  trainingSafeguardingStatus String
+  trainingSafeguardingDate   DateTime?
+  trainingFirstAidStatus      String
+  trainingFirstAidDate        DateTime?
+  trainingMedicationStatus    String
+  trainingMedicationDate      DateTime?
+  createdAt                   DateTime @default(now())
+  updatedAt                   DateTime @updatedAt
+}
+
+model Policy {
+  id               String   @id @default(uuid())
+  title            String
+  category         String
+  version          String
+  lastUpdated      DateTime
+  status           String
+  assignedStaff    String[] // text[] for PostgreSQL
+  document         String?  // path or filename of uploaded document
+  acknowledgements Int      @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model ActivityLog {
+  id        String   @id @default(uuid())
+  userId    String
+  userName  String
+  action    String
+  category  String
+  details   String
+  status    String
+  createdAt DateTime @default(now())
+}
+
+enum AuditStatus {
+  complete
+  incomplete
+  inprogress
+  overdue
+}
+
+enum PriorityLevel {
+  high
+  medium
+  low
+}
+
+model AuditChecklist {
+  id          String        @id @default(uuid())
+  category    String
+  item        String
+  status      AuditStatus
+  priority    PriorityLevel
+  dueDate     DateTime?
+  assignedTo  String?       // single staff ID (UUID)
+  comments    String?
+  evidence    String[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+model Report {
+  id         String   @id @default(uuid())
+  title      String
+  type       String
+  category   String
+  date       DateTime @default(now())
+  status     ReportStatus @default(scheduled)
+  createdBy  String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+enum ReportStatus {
+  complete
+  in_progress
+  scheduled
+}
+
+model Alert {
+  id          String   @id @default(uuid())
+  title       String
+  description String
+  severity    String
+  category    String
+  date        DateTime
+  status      String   @default("active")
+  createdAt   DateTime @default(now())
+}
+
+
+
+
+
+
