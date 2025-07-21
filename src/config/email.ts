@@ -1,5 +1,5 @@
 export const emailConfig = {
-  provider: "smtp", // placeholder
+  provider: "smtp",
   host: "smtp.mailtrap.io",
   port: 587,
   user: "username",

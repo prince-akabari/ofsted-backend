@@ -17,8 +17,9 @@ import dashboardRoutes from "./routes/dashboard.routes";
 import path from "path";
 import { authMiddleware } from "./middlewares/authMiddleware";
 import { activityLogger } from "./middlewares/activityLogger";
-// import "./jobs/alertGenerator"; 
+// import "./jobs/alertGenerator"; d
 import alertRoutes from "./routes/alerts.routes";
+import activityLogRoutes from "./routes/activityLog.routes";
 
 dotenv.config();
 
@@ -36,22 +37,24 @@ async function checkDatabaseConnection() {
 }
 checkDatabaseConnection();
 
-// Middleware
 app.use(
   cors({
-    origin: "https://ofsted.vercel.app",
+    origin: [process.env.FE_URL || "", process.env.DEV_URL || ""],
     credentials: true,
   })
 );
+
 // Root
 app.get("/", (_, res) => res.send("OFSTED API Running..."));
 
+// Middleware
 app.use(helmet());
 app.use(express.json());
 app.use(loggerMiddleware);
 app.use("/api/auth", authRoutes);
 app.use(authMiddleware);
 app.use(activityLogger);
+
 // Routes
 app.use("/api/users", userRoutes);
 app.use("/api/profile", profileRoutes);
@@ -61,8 +64,8 @@ app.use("/api/audit-checklist", auditChecklistRoutes);
 app.use("/api/reports", reportsRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/alerts", alertRoutes);
+app.use("/api/activity-logs", activityLogRoutes);
 
-//
 app.use("/documents", express.static(path.join(__dirname, "..", "documents")));
 
 const PORT = process.env.PORT || 5000;
