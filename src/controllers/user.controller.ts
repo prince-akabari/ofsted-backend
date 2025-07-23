@@ -28,6 +28,24 @@ export const inviteUser = async (req: Request, res: Response) => {
         status: "inactive",
       },
     });
+    if (role === "staff") {
+      await prisma.staff.create({
+        data: {
+          name,
+          email,
+          role: "Staff",
+          status: "Pending",
+          dbsCheckStatus: "Pending",
+          dbsExpiryDate: new Date(),
+          trainingSafeguardingStatus: "Pending",
+          trainingSafeguardingDate: null,
+          trainingFirstAidStatus: "Pending",
+          trainingFirstAidDate: null,
+          trainingMedicationStatus: "Pending",
+          trainingMedicationDate: null,
+        },
+      });
+    }
 
     return res.status(201).json({ message: "User invited successfully", user });
   } catch (err) {
@@ -74,10 +92,53 @@ export const updateUser = async (req: Request, res: Response) => {
         .json({ error: "Email already in use by another user" });
     }
 
+    const previousRole = existingUser.role;
+    const previousEmail = existingUser.email;
+
+    // Update user data
     const updatedUser = await prisma.user.update({
       where: { id },
       data: { name, email, role, status },
     });
+
+    // Role changed from staff → something else: delete Staff record
+    if (previousRole === "staff" && role !== "staff") {
+      await prisma.staff.deleteMany({ where: { email: previousEmail } });
+    }
+
+    // Role changed to staff or already is staff: create or update Staff record
+    if (role === "staff") {
+      const existingStaff = await prisma.staff.findUnique({ where: { email } });
+
+      if (existingStaff) {
+        // Update staff name/email if changed
+        await prisma.staff.update({
+          where: { email },
+          data: {
+            name,
+            email,
+          },
+        });
+      } else {
+        // Create staff if doesn't exist
+        await prisma.staff.create({
+          data: {
+            name,
+            email,
+            role: "Staff",
+            status: "Pending",
+            dbsCheckStatus: "Pending",
+            dbsExpiryDate: new Date(),
+            trainingSafeguardingStatus: "Pending",
+            trainingSafeguardingDate: null,
+            trainingFirstAidStatus: "Pending",
+            trainingFirstAidDate: null,
+            trainingMedicationStatus: "Pending",
+            trainingMedicationDate: null,
+          },
+        });
+      }
+    }
 
     res
       .status(200)
@@ -88,19 +149,29 @@ export const updateUser = async (req: Request, res: Response) => {
   }
 };
 
+
 // Hard delete user
 export const deleteUser = async (req: Request, res: Response) => {
   const { id } = req.params;
 
   try {
     const existing = await prisma.user.findUnique({ where: { id } });
+
     if (!existing) {
-      return res.status(409).json({ error: "User not exists" });
+      return res.status(404).json({ error: "User not exists" });
     }
+
+    // If the user is a staff, also delete from Staff table
+    if (existing.role === "staff") {
+      await prisma.staff.deleteMany({ where: { email: existing.email } });
+    }
+
     await prisma.user.delete({ where: { id } });
-    res.status(200).json({ message: "User deleted" });
+
+    res.status(200).json({ message: "User deleted successfully" });
   } catch (err) {
     console.error("Delete error:", err);
     res.status(500).json({ error: "Server error" });
   }
 };
+

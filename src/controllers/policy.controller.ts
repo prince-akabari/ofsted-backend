@@ -39,10 +39,27 @@ export const createPolicy = async (req: any, res: Response) => {
 
 export const getPolicies = async (req: Request, res: Response) => {
   try {
-    const policies = await prisma.policy.findMany({
+    const user = (req as any).user; // expects: { id, email, role }
+
+    // Get all policies
+    let policies = await prisma.policy.findMany({
       orderBy: { createdAt: "desc" },
     });
 
+    let staff: any = await prisma.staff.findUnique({
+      where: { email: user.email },
+    });
+
+    // If user is staff, filter policies assigned to them
+    if (user.role === "staff") {
+      policies = policies.filter(
+        (policy: any) =>
+          Array.isArray(policy.assignedStaff) &&
+          policy.assignedStaff.includes(staff.id)
+      );
+    }
+
+    // Enhance assignedStaff data for each policy
     const enhancedPolicies = await Promise.all(
       policies.map(async (policy: any) => {
         let assignedStaffData: any = [];

@@ -17,9 +17,9 @@ import dashboardRoutes from "./routes/dashboard.routes";
 import path from "path";
 import { authMiddleware } from "./middlewares/authMiddleware";
 import { activityLogger } from "./middlewares/activityLogger";
-// import "./jobs/alertGenerator"; d
+// import "./jobs/alertGenerator";
 import alertRoutes from "./routes/alerts.routes";
-import activityLogRoutes from "./routes/activityLog.routes";
+// import activityLogRoutes from "./routes/activityLog.routes";
 
 dotenv.config();
 
@@ -55,7 +55,7 @@ app.use("/api/auth", authRoutes);
 app.use(authMiddleware);
 app.use(activityLogger);
 
-// Routes
+// Routes 
 app.use("/api/users", userRoutes);
 app.use("/api/profile", profileRoutes);
 app.use("/api/staff", staffRoutes);
@@ -64,7 +64,7 @@ app.use("/api/audit-checklist", auditChecklistRoutes);
 app.use("/api/reports", reportsRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/alerts", alertRoutes);
-app.use("/api/activity-logs", activityLogRoutes);
+// app.use("/api/activity-logs", activityLogRoutes);
 
 app.use("/documents", express.static(path.join(__dirname, "..", "documents")));
 

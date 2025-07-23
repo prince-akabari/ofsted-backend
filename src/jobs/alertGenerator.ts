@@ -22,18 +22,23 @@ const generateAlert = async () => {
         await prisma.alert.create({
           data: {
             title: "Training Overdue",
-            description: `${staff.name} - Safeguarding training expired on ${moment(staff.trainingSafeguardingDate).format("DD/MM/YYYY")}`,
+            description: `${
+              staff.name
+            } - Safeguarding training expired on ${moment(
+              staff.trainingSafeguardingDate
+            ).format("DD/MM/YYYY")}`,
             severity: "warning",
             category: "Training",
             date: new Date(),
+            status: "active",
+            staffId: staff.id,
           },
         });
 
-        // Optional: update status if you want
-        await prisma.staff.update({
-          where: { id: staff.id },
-          data: { trainingSafeguardingStatus: "expired" },
-        });
+        // await prisma.staff.update({
+        //   where: { id: staff.id },
+        //   data: { trainingSafeguardingStatus: "expired" },
+        // });
       }
 
       // First Aid training check
@@ -45,17 +50,22 @@ const generateAlert = async () => {
         await prisma.alert.create({
           data: {
             title: "Training Overdue",
-            description: `${staff.name} - First Aid training expired on ${moment(staff.trainingFirstAidDate).format("DD/MM/YYYY")}`,
+            description: `${
+              staff.name
+            } - First Aid training expired on ${moment(
+              staff.trainingFirstAidDate
+            ).format("DD/MM/YYYY")}`,
             severity: "warning",
             category: "Training",
+            staffId: staff.id,
             date: new Date(),
           },
         });
 
-        await prisma.staff.update({
-          where: { id: staff.id },
-          data: { trainingFirstAidStatus: "expired" },
-        });
+        // await prisma.staff.update({
+        //   where: { id: staff.id },
+        //   data: { trainingFirstAidStatus: "expired" },
+        // });
       }
 
       // Medication training check
@@ -67,25 +77,31 @@ const generateAlert = async () => {
         await prisma.alert.create({
           data: {
             title: "Training Overdue",
-            description: `${staff.name} - Medication training expired on ${moment(staff.trainingMedicationDate).format("DD/MM/YYYY")}`,
+            description: `${
+              staff.name
+            } - Medication training expired on ${moment(
+              staff.trainingMedicationDate
+            ).format("DD/MM/YYYY")}`,
             severity: "warning",
             category: "Training",
             date: new Date(),
+            status: "active",
+            staffId: staff.id,
           },
         });
 
-        await prisma.staff.update({
-          where: { id: staff.id },
-          data: { trainingMedicationStatus: "expired" },
-        });
+        // await prisma.staff.update({
+        //   where: { id: staff.id },
+        //   data: { trainingMedicationStatus: "expired" },
+        // });
       }
     }
 
-    console.log("Training alert job executed at", new Date().toISOString());
+    console.log("Training alert cron executed at", new Date().toISOString());
   } catch (error) {
-    console.error("Error in training alert cron job:", error);
+    console.error("Error in alert cron job:", error);
   }
 };
 
-// Run every 5 minutes
+// Run every minute (adjust if needed)
 cron.schedule("*/1 * * * *", generateAlert);

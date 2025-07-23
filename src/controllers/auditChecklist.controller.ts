@@ -35,13 +35,33 @@ export const addAuditChecklist = async (req: Request, res: Response) => {
   }
 };
 
-// Get all checklist items (with assigned staff)
-export const getAuditChecklists = async (_req: Request, res: Response) => {
+export const getAuditChecklists = async (req: Request, res: Response) => {
   try {
+    const user = (req as any).user;
+
+    let staffId: string | undefined;
+
+    // If the user is staff, get their staff ID
+    if (user.role === "staff") {
+      const staff = await prisma.staff.findUnique({
+        where: { email: user.email },
+        select: { id: true },
+      });
+
+      if (!staff) {
+        return res.status(404).json({ message: "Staff record not found" });
+      }
+
+      staffId = staff.id;
+    }
+
+    // Filter: if staff, only show items assigned to them
     const checklistItems = await prisma.auditChecklist.findMany({
+      where: staffId ? { assignedTo: staffId } : {}, // 👈 Filter only if staff
       orderBy: { createdAt: "desc" },
     });
 
+    // Populate assigned staff details
     const populated = await Promise.all(
       checklistItems.map(async (item) => {
         const staff = item.assignedTo
@@ -64,6 +84,7 @@ export const getAuditChecklists = async (_req: Request, res: Response) => {
     return res.status(500).json({ message: "Failed to fetch checklist items" });
   }
 };
+
 
 // Update a checklist item
 // PUT /api/audit-checklist/:id

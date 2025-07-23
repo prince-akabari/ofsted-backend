@@ -122,9 +122,7 @@ model Alert {
   date        DateTime
   status      String   @default("active")
   createdAt   DateTime @default(now())
-  staffId     String?
 }
-
 
 
 

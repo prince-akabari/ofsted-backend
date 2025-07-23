@@ -47,9 +47,23 @@ export const createStaff = async (req: Request, res: Response) => {
 
 export const getAllStaff = async (req: Request, res: Response) => {
   try {
-    const staff = await prisma.staff.findMany({
-      orderBy: { createdAt: "desc" },
-    });
+    const user = (req as any).user; // { email, role }
+
+    let staff;
+
+    // Role-based filtering
+    if (user.role === "staff") {
+      staff = await prisma.staff.findMany({
+        where: {
+          email: user.email,
+        },
+        orderBy: { createdAt: "desc" },
+      });
+    } else {
+      staff = await prisma.staff.findMany({
+        orderBy: { createdAt: "desc" },
+      });
+    }
 
     const total = staff.length;
     const fullyCompliant = staff.filter((s) => s.status === "compliant").length;
@@ -73,6 +87,7 @@ export const getAllStaff = async (req: Request, res: Response) => {
     res.status(500).json({ error: "Internal server error" });
   }
 };
+
 
 export const getStaffById = async (req: Request, res: Response) => {
   try {

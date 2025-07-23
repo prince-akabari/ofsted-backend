@@ -4,7 +4,25 @@ import prisma from "../config/db";
 
 export const getAlerts = async (req: Request, res: Response) => {
   try {
+    const user = (req as any).user;
+
+    let staffId: string | undefined = undefined;
+
+    if (user.role === "staff") {
+      const staff = await prisma.staff.findUnique({
+        where: { email: user.email },
+        select: { id: true },
+      });
+
+      if (!staff) {
+        return res.status(404).json({ message: "Staff not found" });
+      }
+
+      staffId = staff.id;
+    }
+
     const alerts = await prisma.alert.findMany({
+      where: staffId ? { staffId } : {},
       orderBy: {
         date: "desc",
       },
