@@ -19,7 +19,7 @@ import { authMiddleware } from "./middlewares/authMiddleware";
 import { activityLogger } from "./middlewares/activityLogger";
 // import "./jobs/alertGenerator";
 import alertRoutes from "./routes/alerts.routes";
-// import activityLogRoutes from "./routes/activityLog.routes";
+import activityLogRoutes from "./routes/activityLog.routes";
 
 dotenv.config();
 
@@ -64,7 +64,7 @@ app.use("/api/audit-checklist", auditChecklistRoutes);
 app.use("/api/reports", reportsRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/alerts", alertRoutes);
-// app.use("/api/activity-logs", activityLogRoutes);
+app.use("/api/activity-logs", activityLogRoutes);
 
 app.use("/documents", express.static(path.join(__dirname, "..", "documents")));
 

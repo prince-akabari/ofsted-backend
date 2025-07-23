@@ -159,3 +159,37 @@ export const deleteAuditChecklist = async (req: Request, res: Response) => {
     return res.status(500).json({ message: "Something went wrong." });
   }
 };
+
+// GET /api/audit-checklist/:id
+export const getAuditChecklistById = async (req: Request, res: Response) => {
+  const { id } = req.params;
+
+  try {
+    const item = await prisma.auditChecklist.findUnique({
+      where: { id },
+    });
+
+    if (!item) {
+      return res.status(404).json({ message: "Checklist item not found" });
+    }
+
+    // Populate staff details
+    const assignedStaff = item.assignedTo
+      ? await prisma.staff.findUnique({
+          where: { id: item.assignedTo },
+          select: { id: true, name: true, email: true, role: true },
+        })
+      : null;
+
+    return res.status(200).json({
+      checklistItem: {
+        ...item,
+        assignedTo: assignedStaff,
+      },
+    });
+  } catch (error) {
+    console.error("[Get Checklist By ID Error]", error);
+    return res.status(500).json({ message: "Failed to fetch checklist item" });
+  }
+};
+

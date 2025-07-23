@@ -94,7 +94,7 @@ export const createReport = async (req: any, res: Response) => {
       data: {
         title,
         type,
-        category,
+        category: title,
         createdBy: userId,
         status: "scheduled",
         date: new Date(),

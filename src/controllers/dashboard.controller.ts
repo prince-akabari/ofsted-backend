@@ -2,11 +2,33 @@ import { Request, Response } from "express";
 import moment from "moment";
 import prisma from "../config/db";
 
-export const getDashboardOverview = async (req: Request, res: Response) => {
+export const getDashboardOverview = async (req: any, res: Response) => {
   try {
-    // Get all audit checklist items
-    const checklistItems = await prisma.auditChecklist.findMany();
+    const user = req.user; // assumes req.user is populated by middleware
+    const isStaff = user.role === "staff";
 
+    let checklistItems = [];
+
+    if (isStaff) {
+      // Get staff member by email
+      const staffMember = await prisma.staff.findUnique({
+        where: { email: user.email },
+      });
+
+      if (!staffMember) {
+        return res.status(403).json({ error: "Staff profile not found" });
+      }
+
+      // Fetch only checklist items assigned to this staff
+      checklistItems = await prisma.auditChecklist.findMany({
+        where: { assignedTo: staffMember.id },
+      });
+    } else {
+      // Admin or Read-only: Fetch all checklist items
+      checklistItems = await prisma.auditChecklist.findMany();
+    }
+
+    // Compute audit completion
     const completedItems = checklistItems.filter(
       (item) => item.status === "complete"
     ).length;
@@ -40,51 +62,55 @@ export const getDashboardOverview = async (req: Request, res: Response) => {
       };
     });
 
-    // Last OFSTED visit report
-    const lastReport = await prisma.report.findFirst({
-      where: { type: "ofsted" },
-      orderBy: { createdAt: "desc" },
-    });
+    // Only fetch reports if NOT staff
+    let lastReport = null;
+    let recentReports:any[] = [];
+    if (!isStaff) {
+      const last = await prisma.report.findFirst({
+        where: { type: "ofsted" },
+        orderBy: { createdAt: "desc" },
+      });
+      lastReport = last
+        ? {
+            date: moment(last.createdAt).format("YYYY-MM-DD"),
+            rating: determineOfstedRating(last.status),
+          }
+        : null;
 
-    // Recent reports
-    const recentReportsRaw = await prisma.report.findMany({
-      where: {},
-      orderBy: { createdAt: "desc" },
-      take: 3,
-    });
+      const recent = await prisma.report.findMany({
+        orderBy: { createdAt: "desc" },
+        take: 3,
+      });
+      recentReports = recent.map((r) => ({
+        title: r.title,
+        date: moment(r.createdAt).format("YYYY-MM-DD"),
+        status: r.status,
+      }));
+    }
 
-    const recentReports = recentReportsRaw.map((r: any) => ({
-      title: r.title,
-      date: moment(r.createdAt).format("YYYY-MM-DD"),
-      status: r.status,
-    }));
-
-    // Overall readiness based on staff compliance
-    const staff = await prisma.staff.findMany();
-
-    const compliantStaff = staff.filter((s) => {
-      return (
-        s.dbsCheckStatus === "valid" &&
-        s.trainingSafeguardingStatus === "complete" &&
-        s.trainingFirstAidStatus === "complete" &&
-        s.trainingMedicationStatus === "complete"
-      );
-    });
-    const overallReadiness =
-      staff.length > 0
-        ? Math.round((compliantStaff.length / staff.length) * 100)
-        : 0;
+    // Overall readiness for non-staff users
+    let overallReadiness = 0;
+    if (!isStaff) {
+      const staff = await prisma.staff.findMany();
+      const compliantStaff = staff.filter((s) => {
+        return (
+          s.dbsCheckStatus === "valid" &&
+          s.trainingSafeguardingStatus === "complete" &&
+          s.trainingFirstAidStatus === "complete" &&
+          s.trainingMedicationStatus === "complete"
+        );
+      });
+      overallReadiness =
+        staff.length > 0
+          ? Math.round((compliantStaff.length / staff.length) * 100)
+          : 0;
+    }
 
     res.json({
-      overallReadiness,
+      overallReadiness: isStaff ? undefined : overallReadiness,
       auditCompletion,
       outstandingActions,
-      lastOfstedVisit: lastReport
-        ? {
-            date: moment(lastReport.createdAt).format("YYYY-MM-DD"),
-            rating: determineOfstedRating(lastReport.status),
-          }
-        : null,
+      lastOfstedVisit: lastReport,
       checklistOverview,
       recentReports,
     });
@@ -101,7 +127,7 @@ function determineOfstedRating(reportStatus: any): string {
     case "in_progress":
       return "Good";
     case "scheduled":
-      return "Requires Improvement"; // or 'Not Yet Rated'
+      return "Requires Improvement";
     default:
       return "Not Rated";
   }
