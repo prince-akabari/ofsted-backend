@@ -56,6 +56,7 @@ model Policy {
   assignedStaff    String[] // text[] for PostgreSQL
   document         String?  // path or filename of uploaded document
   acknowledgements Int      @default(0)
+  acknowledgedStaff String[] @default([])
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 }

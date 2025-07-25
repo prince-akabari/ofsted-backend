@@ -167,3 +167,56 @@ export const deletePolicy = async (req: Request, res: Response) => {
     res.status(500).json({ error: "Server error" });
   }
 };
+
+export const acknowledgePolicy = async (req: Request, res: Response) => {
+  const { policyId } = req.params;
+  const user = (req as any).user; // from your auth middleware
+
+  try {
+    // Step 1: Get staff record using the user.id
+    const staff = await prisma.staff.findFirst({
+      where: { email: user.email },
+      select: { id: true },
+    });
+
+    if (!staff) {
+      return res
+        .status(404)
+        .json({ message: "Staff record not found for this user." });
+    }
+
+    const policy = await prisma.policy.findUnique({
+      where: { id: policyId },
+    });
+
+    if (!policy) {
+      return res.status(404).json({ message: "Policy not found." });
+    }
+
+    // Step 2: Check if staff has already acknowledged
+    if (policy.acknowledgedStaff.includes(staff.id)) {
+      return res
+        .status(400)
+        .json({ message: "You have already acknowledged this policy." });
+    }
+
+    // Step 3: Push staff ID into acknowledgedStaff and increment counter
+    const updatedPolicy = await prisma.policy.update({
+      where: { id: policyId },
+      data: {
+        acknowledgedStaff: {
+          push: staff.id,
+        },
+        acknowledgements: policy.acknowledgements + 1,
+      },
+    });
+
+    return res.status(200).json({
+      message: "Policy acknowledged successfully.",
+      policy: updatedPolicy,
+    });
+  } catch (error) {
+    console.error("[Acknowledge Policy Error]", error);
+    return res.status(500).json({ message: "Something went wrong." });
+  }
+};
