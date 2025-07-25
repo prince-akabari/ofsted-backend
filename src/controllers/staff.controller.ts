@@ -88,7 +88,6 @@ export const getAllStaff = async (req: Request, res: Response) => {
   }
 };
 
-
 export const getStaffById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
@@ -143,6 +142,8 @@ export const getStaffById = async (req: Request, res: Response) => {
           status: staff.trainingMedicationStatus,
         },
       },
+      trainingCertificates: staff.trainingCertificates,
+      employmentHistory: staff.employmentHistory,
     });
   } catch (err) {
     console.error("Get staff by ID error:", err);
@@ -217,5 +218,50 @@ export const deleteStaff = async (req: Request, res: Response) => {
   } catch (err) {
     console.error("Delete staff error:", err);
     return res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+// PATCH /staff/:id/update-records
+export const updateStaffRecords = async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { trainingCertificates, employmentHistory } = req.body;
+
+  try {
+    // Validation: At least one must be present
+    if (!trainingCertificates && !employmentHistory) {
+      return res.status(400).json({
+        message:
+          "At least one of trainingCertificates or employmentHistory is required.",
+      });
+    }
+
+    // Validation: Max 3 items in each
+    if (trainingCertificates && trainingCertificates.length > 3) {
+      return res.status(400).json({
+        message: "Maximum 3 training certificates allowed.",
+      });
+    }
+
+    if (employmentHistory && employmentHistory.length > 3) {
+      return res.status(400).json({
+        message: "Maximum 3 employment history entries allowed.",
+      });
+    }
+
+    const updatedStaff = await prisma.staff.update({
+      where: { id },
+      data: {
+        ...(trainingCertificates && { trainingCertificates }),
+        ...(employmentHistory && { employmentHistory }),
+      },
+    });
+
+    return res.status(200).json({
+      message: "Staff records updated successfully.",
+      staff: updatedStaff,
+    });
+  } catch (error) {
+    console.error("[Update Staff Records]", error);
+    return res.status(500).json({ message: "Failed to update staff records." });
   }
 };

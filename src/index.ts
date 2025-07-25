@@ -48,6 +48,7 @@ app.use(
 app.get("/", (_, res) => res.send("OFSTED API Running..."));
 
 // Middleware
+app.use("/documents", express.static(path.join(__dirname, "..", "documents")));
 app.use(helmet());
 app.use(express.json());
 app.use(loggerMiddleware);
@@ -66,7 +67,7 @@ app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/alerts", alertRoutes);
 app.use("/api/activity-logs", activityLogRoutes);
 
-app.use("/documents", express.static(path.join(__dirname, "..", "documents")));
+
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () =>

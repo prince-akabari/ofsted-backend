@@ -1,5 +1,7 @@
 import { Request, Response } from "express";
 import prisma from "../config/db";
+import path from "path";
+import fs from "fs";
 
 // Add a checklist item
 export const addAuditChecklist = async (req: Request, res: Response) => {
@@ -85,9 +87,6 @@ export const getAuditChecklists = async (req: Request, res: Response) => {
   }
 };
 
-
-// Update a checklist item
-// PUT /api/audit-checklist/:id
 export const editAuditChecklist = async (req: Request, res: Response) => {
   const { id } = req.params;
 
@@ -135,7 +134,6 @@ export const editAuditChecklist = async (req: Request, res: Response) => {
   }
 };
 
-// Delete a checklist item
 // DELETE /api/audit-checklist/:id
 export const deleteAuditChecklist = async (req: Request, res: Response) => {
   const { id } = req.params;
@@ -190,6 +188,57 @@ export const getAuditChecklistById = async (req: Request, res: Response) => {
   } catch (error) {
     console.error("[Get Checklist By ID Error]", error);
     return res.status(500).json({ message: "Failed to fetch checklist item" });
+  }
+};
+
+const auditEvidenceDir = path.join(__dirname, "..", "..", "documents", "audit");
+
+export const uploadAuditEvidence = async (req: Request, res: Response) => {
+  const { id } = req.params;
+
+  try {
+    const item = await prisma.auditChecklist.findUnique({ where: { id } });
+
+    if (!item) {
+      return res.status(404).json({ message: "Checklist item not found" });
+    }
+
+    // Delete existing evidence files (if any)
+    if (Array.isArray(item.evidence) && item.evidence.length > 0) {
+      for (const filename of item.evidence) {
+        const filePath = path.join(auditEvidenceDir, filename);
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+        }
+      }
+    }
+
+    // If no new files are uploaded
+    if (!req.files || (Array.isArray(req.files) && req.files.length === 0)) {
+      await prisma.auditChecklist.update({
+        where: { id },
+        data: { evidence: [] },
+      });
+
+      return res.status(200).json({ message: "All evidence removed successfully." });
+    }
+
+    // New evidence files uploaded
+    const files = req.files as Express.Multer.File[];
+    const filenames = files.map((file) => file.filename);
+
+    await prisma.auditChecklist.update({
+      where: { id },
+      data: { evidence: filenames },
+    });
+
+    return res.status(200).json({
+      message: "Evidence uploaded successfully",
+      files: filenames,
+    });
+  } catch (err) {
+    console.error("Evidence Upload Error:", err);
+    return res.status(500).json({ message: "Server error" });
   }
 };
 
