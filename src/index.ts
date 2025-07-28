@@ -17,7 +17,7 @@ import dashboardRoutes from "./routes/dashboard.routes";
 import path from "path";
 import { authMiddleware } from "./middlewares/authMiddleware";
 import { activityLogger } from "./middlewares/activityLogger";
-// import "./jobs/alertGenerator";
+import "./jobs/alertGenerator";
 import alertRoutes from "./routes/alerts.routes";
 import activityLogRoutes from "./routes/activityLog.routes";
 

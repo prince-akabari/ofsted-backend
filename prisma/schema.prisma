@@ -39,8 +39,8 @@ model Staff {
   trainingFirstAidDate       DateTime?
   trainingMedicationStatus   String
   trainingMedicationDate     DateTime?
-  trainingCertificates       Json?    // ← ✅ NEW
-  employmentHistory          Json?    // ← ✅ NEW
+  trainingCertificates       Json?  
+  employmentHistory          Json?    
   createdAt                  DateTime @default(now())
   updatedAt                  DateTime @updatedAt
 }
