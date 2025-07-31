@@ -55,12 +55,29 @@ export const inviteUser = async (req: Request, res: Response) => {
 };
 
 // Get all users
-export const getUsers = async (_req: Request, res: Response) => {
+export const getUsers = async (req: Request, res: Response) => {
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = parseInt(req.query.limit as string) || 5;
+  const skip = (page - 1) * limit;
+
   try {
-    const users = await prisma.user.findMany({
-      orderBy: { createdAt: "desc" },
+    const [totalUsers, users] = await Promise.all([
+      prisma.user.count(),
+      prisma.user.findMany({
+        skip,
+        take: limit,
+        orderBy: { createdAt: "desc" },
+      }),
+    ]);
+
+    const totalPages = Math.ceil(totalUsers / limit);
+
+    res.status(200).json({
+      currentPage: page,
+      totalPages,
+      totalUsers,
+      users,
     });
-    res.status(200).json(users);
   } catch (err) {
     console.error("Get users error:", err);
     res.status(500).json({ error: "Server error" });
@@ -149,7 +166,6 @@ export const updateUser = async (req: Request, res: Response) => {
   }
 };
 
-
 // Hard delete user
 export const deleteUser = async (req: Request, res: Response) => {
   const { id } = req.params;
@@ -174,4 +190,3 @@ export const deleteUser = async (req: Request, res: Response) => {
     res.status(500).json({ error: "Server error" });
   }
 };
-

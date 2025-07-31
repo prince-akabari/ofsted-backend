@@ -44,3 +44,58 @@ export const login = async (req: Request, res: Response) => {
     return res.status(500).json({ error: "Server error" });
   }
 };
+
+export const registerUser = async (req: Request, res: Response) => {
+  const { name, email, password, role } = req.body;
+
+  if (!name || !email || !password || !role) {
+    return res.status(400).json({ error: "All fields are required" });
+  }
+
+  try {
+    // Check if email already exists
+    const existingUser = await prisma.user.findUnique({ where: { email } });
+    if (existingUser) {
+      return res.status(409).json({ error: "Email already exists" });
+    }
+
+    // Hash password and create user
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const user = await prisma.user.create({
+      data: {
+        name,
+        email,
+        role,
+        password: hashedPassword,
+        status: "active",
+      },
+    });
+
+    // If role is staff, create Staff entry
+    if (role === "staff") {
+      await prisma.staff.create({
+        data: {
+          name,
+          email,
+          role: "Staff",
+          status: "Active",
+          dbsCheckStatus: "Pending",
+          dbsExpiryDate: new Date(),
+          trainingSafeguardingStatus: "Pending",
+          trainingSafeguardingDate: null,
+          trainingFirstAidStatus: "Pending",
+          trainingFirstAidDate: null,
+          trainingMedicationStatus: "Pending",
+          trainingMedicationDate: null,
+        },
+      });
+    }
+
+    return res
+      .status(201)
+      .json({ message: "Your account created successfully!", user });
+  } catch (err) {
+    console.error("Register error:", err);
+    return res.status(500).json({ error: "Server error" });
+  }
+};
