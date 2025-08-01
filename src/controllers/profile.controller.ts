@@ -14,6 +14,7 @@ export const getProfile = async (req: Request, res: Response) => {
         role: true,
         createdAt: true,
         lastLogin: true,
+        homeId: true,
       },
     });
 
@@ -23,6 +24,7 @@ export const getProfile = async (req: Request, res: Response) => {
       name: user.name,
       email: user.email,
       role: user.role,
+      homeId: user.homeId,
       joinDate: user.createdAt.toISOString().split("T")[0],
       lastLogin: user.lastLogin
         ? user.lastLogin.toISOString().split("T")[0]

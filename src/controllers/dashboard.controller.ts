@@ -107,7 +107,7 @@ export const getDashboardOverview = async (req: any, res: Response) => {
     }
 
     res.json({
-      overallReadiness: isStaff ? undefined : overallReadiness,
+      overallReadiness: isStaff ? 0 : overallReadiness,
       auditCompletion,
       outstandingActions,
       lastOfstedVisit: lastReport,

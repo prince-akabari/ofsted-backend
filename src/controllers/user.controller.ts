@@ -2,8 +2,14 @@ import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import prisma from "../config/db";
 
-// Invite new user
-export const inviteUser = async (req: Request, res: Response) => {
+// Utility to generate unique homeId like "HME12345A"
+const generateHomeId = () => {
+  const randomPart = Math.random().toString(36).substring(2, 8).toUpperCase(); // 6 chars
+  const suffix = Math.floor(Math.random() * 10); // 1 digit
+  return `HME${randomPart}${suffix}`;
+};
+
+export const inviteUser = async (req: any, res: Response) => {
   const { name, email, role } = req.body;
 
   if (!name || !email || !role) {
@@ -18,7 +24,28 @@ export const inviteUser = async (req: Request, res: Response) => {
       return res.status(409).json({ error: "Email already exists" });
     }
 
-    const defaultPassword = await bcrypt.hash("User@123", 10);
+    let homeId: string | null = null;
+
+    // If inviting Admin, generate a new homeId
+    if (role === "admin") {
+      homeId = generateHomeId();
+    } else {
+      const currentUser = req.body;
+
+      if (currentUser?.homeId) {
+        homeId = currentUser.homeId;
+      } else {
+        return res
+          .status(400)
+          .json({ error: "Invalid inviter context for staff/readonly" });
+      }
+    }
+
+    const defaultPassword =
+      role === "admin "
+        ? await bcrypt.hash("Admin@ofsted$123", 10)
+        : await bcrypt.hash("User@ofsted$123", 10);
+
     const user = await prisma.user.create({
       data: {
         name,
@@ -26,8 +53,10 @@ export const inviteUser = async (req: Request, res: Response) => {
         role,
         password: defaultPassword,
         status: "inactive",
+        homeId,
       },
     });
+
     if (role === "staff") {
       await prisma.staff.create({
         data: {

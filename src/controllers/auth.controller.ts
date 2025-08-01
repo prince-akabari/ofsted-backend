@@ -46,9 +46,9 @@ export const login = async (req: Request, res: Response) => {
 };
 
 export const registerUser = async (req: Request, res: Response) => {
-  const { name, email, password, role } = req.body;
+  const { name, email, password, code } = req.body;
 
-  if (!name || !email || !password || !role) {
+  if (!name || !email || !password || !code) {
     return res.status(400).json({ error: "All fields are required" });
   }
 
@@ -59,19 +59,36 @@ export const registerUser = async (req: Request, res: Response) => {
       return res.status(409).json({ error: "Email already exists" });
     }
 
-    // Hash password and create user
+    // Find the admin user with this home code
+    const admin = await prisma.user.findFirst({
+      where: {
+        role: "admin",
+        homeId: code,
+      },
+    });
+
+    if (!admin) {
+      return res.status(400).json({ error: "Invalid home code" });
+    }
+
+    // Hash password and create user (default role: 'staff' or 'readonly')
     const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Default to staff for now — change logic here if you later allow user role selection
+    const role = "staff";
+
     const user = await prisma.user.create({
       data: {
         name,
         email,
-        role,
         password: hashedPassword,
+        role,
         status: "active",
+        homeId: admin.homeId,
       },
     });
 
-    // If role is staff, create Staff entry
+    // If staff, also create staff entry
     if (role === "staff") {
       await prisma.staff.create({
         data: {
@@ -91,11 +108,13 @@ export const registerUser = async (req: Request, res: Response) => {
       });
     }
 
-    return res
-      .status(201)
-      .json({ message: "Your account created successfully!", user });
+    return res.status(201).json({
+      message: "Account created successfully!",
+      user,
+    });
   } catch (err) {
     console.error("Register error:", err);
     return res.status(500).json({ error: "Server error" });
   }
 };
+
