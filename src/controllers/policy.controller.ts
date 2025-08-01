@@ -39,30 +39,60 @@ export const createPolicy = async (req: any, res: Response) => {
 
 export const getPolicies = async (req: Request, res: Response) => {
   try {
-    const user = (req as any).user; // expects: { id, email, role }
+    const user = (req as any).user; // { id, email, role, homeId }
 
-    // Get all policies
     let policies = await prisma.policy.findMany({
       orderBy: { createdAt: "desc" },
     });
 
-    let staff: any = await prisma.staff.findUnique({
-      where: { email: user.email },
-    });
+    let staff: any = null;
 
-    // If user is staff, filter policies assigned to them
     if (user.role === "staff") {
+      staff = await prisma.staff.findUnique({
+        where: { email: user.email },
+      });
+
+      // If staff not found
+      if (!staff) {
+        return res.status(404).json({ error: "Staff not found" });
+      }
+
+      // Filter only assigned policies
       policies = policies.filter(
         (policy: any) =>
           Array.isArray(policy.assignedStaff) &&
           policy.assignedStaff.includes(staff.id)
       );
+    } else {
+      // For admin/readonly, filter policies that belong to same homeId
+      // Step 1: Get all staff under this homeId
+      const staffUsers = await prisma.user.findMany({
+        where: {
+          homeId: user.homeId,
+          role: "staff",
+        },
+        select: { email: true },
+      });
+
+      const staffEmails = staffUsers.map((u) => u.email);
+
+      const staffList = await prisma.staff.findMany({
+        where: { email: { in: staffEmails } },
+        select: { id: true },
+      });
+
+      const allowedStaffIds = staffList.map((s) => s.id);
+
+      // Step 2: Filter policies that have at least one assignedStaff in the same home
+      policies = policies.filter((policy: any) =>
+        policy.assignedStaff?.some((id: string) => allowedStaffIds.includes(id))
+      );
     }
 
-    // Enhance assignedStaff data for each policy
+    // Enhance staff info in each policy
     const enhancedPolicies = await Promise.all(
       policies.map(async (policy: any) => {
-        let assignedStaffData: any = [];
+        let assignedStaffData:any = [];
 
         if (
           Array.isArray(policy.assignedStaff) &&

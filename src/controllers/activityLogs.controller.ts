@@ -4,18 +4,36 @@ import moment from "moment";
 
 export const getActivityLogs = async (req: Request, res: Response) => {
   try {
+    const user = (req as any).user; // { email, role, homeId }
+
+    if (user.role !== "admin") {
+      return res.status(403).json({ error: "Access denied" });
+    }
+
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
     const skip = (page - 1) * limit;
 
+    // Find all users under this admin's homeId
+    const relatedUsers = await prisma.user.findMany({
+      where: { homeId: user.homeId },
+      select: { name: true },
+    });
+
+    const userNames = relatedUsers.map((u) => u.name);
+
     const [total, logs] = await Promise.all([
-      prisma.activityLog.count(),
+      prisma.activityLog.count({
+        where: { userName: { in: userNames } },
+      }),
       prisma.activityLog.findMany({
+        where: { userName: { in: userNames } },
         orderBy: { createdAt: "desc" },
         skip,
         take: limit,
       }),
     ]);
+
     const formattedLogs = logs.map((log) => ({
       id: log.id,
       timestamp: moment(log.createdAt).format("YYYY-MM-DD HH:mm"),

@@ -4,13 +4,42 @@ import prisma from "../config/db";
 
 export const getDashboardOverview = async (req: any, res: Response) => {
   try {
-    const user = req.user; // assumes req.user is populated by middleware
+    const user = req.user;
     const isStaff = user.role === "staff";
 
-    let checklistItems = [];
+    // 1. Get user record to access homeId
+    const currentUser = await prisma.user.findUnique({
+      where: { email: user.email },
+      select: { id: true, email: true, homeId: true },
+    });
 
+    if (!currentUser) {
+      return res.status(403).json({ error: "User not found" });
+    }
+
+    const homeId = currentUser.homeId;
+
+    // 2. Get all users under same home
+    const homeUsers = await prisma.user.findMany({
+      where: { homeId },
+      select: { id: true, email: true },
+    });
+
+    const allowedEmails = homeUsers.map((u) => u.email);
+    const allowedUserIds = homeUsers.map((u) => u.id);
+
+    // 3. Get staff linked by email
+    const allowedStaff = await prisma.staff.findMany({
+      where: {
+        email: { in: allowedEmails },
+      },
+      select: { id: true, email: true },
+    });
+    const allowedStaffIds = allowedStaff.map((s) => s.id);
+
+    // 4. Get checklist items
+    let checklistItems = [];
     if (isStaff) {
-      // Get staff member by email
       const staffMember = await prisma.staff.findUnique({
         where: { email: user.email },
       });
@@ -19,28 +48,30 @@ export const getDashboardOverview = async (req: any, res: Response) => {
         return res.status(403).json({ error: "Staff profile not found" });
       }
 
-      // Fetch only checklist items assigned to this staff
       checklistItems = await prisma.auditChecklist.findMany({
-        where: { assignedTo: staffMember.id },
+        where: {
+          assignedTo: staffMember.id,
+        },
       });
     } else {
-      // Admin or Read-only: Fetch all checklist items
-      checklistItems = await prisma.auditChecklist.findMany();
+      checklistItems = await prisma.auditChecklist.findMany({
+        where: {
+          assignedTo: { in: allowedStaffIds },
+        },
+      });
     }
 
-    // Compute audit completion
+    // 5. Completion & Overview
     const completedItems = checklistItems.filter(
       (item) => item.status === "complete"
     ).length;
     const totalItems = checklistItems.length;
     const auditCompletion =
       totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
-
     const outstandingActions = checklistItems.filter(
       (item) => item.status !== "complete"
     ).length;
 
-    // Group by category
     const categories = [
       "Safeguarding",
       "Behavior Management",
@@ -62,14 +93,18 @@ export const getDashboardOverview = async (req: any, res: Response) => {
       };
     });
 
-    // Only fetch reports if NOT staff
+    // 6. Reports (only for non-staff)
     let lastReport = null;
-    let recentReports:any[] = [];
+    let recentReports: any[] = [];
     if (!isStaff) {
       const last = await prisma.report.findFirst({
-        where: { type: "ofsted" },
+        where: {
+          type: "ofsted",
+          createdBy: { in: allowedUserIds },
+        },
         orderBy: { createdAt: "desc" },
       });
+
       lastReport = last
         ? {
             date: moment(last.createdAt).format("YYYY-MM-DD"),
@@ -78,9 +113,13 @@ export const getDashboardOverview = async (req: any, res: Response) => {
         : null;
 
       const recent = await prisma.report.findMany({
+        where: {
+          createdBy: { in: allowedUserIds },
+        },
         orderBy: { createdAt: "desc" },
         take: 3,
       });
+
       recentReports = recent.map((r) => ({
         title: r.title,
         date: moment(r.createdAt).format("YYYY-MM-DD"),
@@ -88,10 +127,15 @@ export const getDashboardOverview = async (req: any, res: Response) => {
       }));
     }
 
-    // Overall readiness for non-staff users
+    // 7. Staff Readiness
     let overallReadiness = 0;
     if (!isStaff) {
-      const staff = await prisma.staff.findMany();
+      const staff = await prisma.staff.findMany({
+        where: {
+          email: { in: allowedEmails },
+        },
+      });
+
       const compliantStaff = staff.filter((s) => {
         return (
           s.dbsCheckStatus === "valid" &&
@@ -100,14 +144,32 @@ export const getDashboardOverview = async (req: any, res: Response) => {
           s.trainingMedicationStatus === "complete"
         );
       });
+
       overallReadiness =
         staff.length > 0
           ? Math.round((compliantStaff.length / staff.length) * 100)
           : 0;
+    } else {
+      if (isStaff) {
+        const staff = await prisma.staff.findUnique({
+          where: { email: user.email },
+        });
+
+        if (staff) {
+          const isCompliant =
+            staff.dbsCheckStatus === "valid" &&
+            staff.trainingSafeguardingStatus === "complete" &&
+            staff.trainingFirstAidStatus === "complete" &&
+            staff.trainingMedicationStatus === "complete";
+
+          overallReadiness = isCompliant ? 100 : 0;
+        }
+      }
     }
 
+    // 8. Final Response
     res.json({
-      overallReadiness: isStaff ? 0 : overallReadiness,
+      overallReadiness: overallReadiness,
       auditCompletion,
       outstandingActions,
       lastOfstedVisit: lastReport,
@@ -120,8 +182,8 @@ export const getDashboardOverview = async (req: any, res: Response) => {
   }
 };
 
-function determineOfstedRating(reportStatus: any): string {
-  switch (reportStatus) {
+function determineOfstedRating(status: string): string {
+  switch (status) {
     case "complete":
       return "Outstanding";
     case "in_progress":

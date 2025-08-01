@@ -4,15 +4,43 @@ import prisma from "../config/db";
 // GET /api/reports - List all reports created by logged-in user
 export const getAllReports = async (req: Request, res: Response) => {
   try {
-    // 1. Get all reports
-    const reports = await prisma.report.findMany({
-      orderBy: { createdAt: "desc" },
-    });
+    const user = (req as any).user; // expects: { id, email, role, homeId }
 
-    // 2. Get distinct user IDs from reports
+    let reports;
+
+    if (user.role === "staff") {
+      // Staff: Only their own reports
+      reports = await prisma.report.findMany({
+        where: {
+          createdBy: user.id,
+        },
+        orderBy: { createdAt: "desc" },
+      });
+    } else {
+      // Admin / Readonly: Fetch all users under the same homeId
+      const homeUsers = await prisma.user.findMany({
+        where: {
+          homeId: user.homeId,
+        },
+        select: {
+          id: true,
+        },
+      });
+
+      const userIds = homeUsers.map((u) => u.id);
+
+      reports = await prisma.report.findMany({
+        where: {
+          createdBy: { in: userIds },
+        },
+        orderBy: { createdAt: "desc" },
+      });
+    }
+
+    // Get distinct user IDs from reports
     const userIds = [...new Set(reports.map((r) => r.createdBy))];
 
-    // 3. Fetch those users
+    // Fetch those users
     const users = await prisma.user.findMany({
       where: {
         id: { in: userIds },
@@ -25,7 +53,7 @@ export const getAllReports = async (req: Request, res: Response) => {
       },
     });
 
-    // 4. Map user details to report
+    // Map user details to reports
     const enrichedReports = reports.map((report: any) => {
       const user = users.find((u) => u.id === report.createdBy);
       return {
@@ -40,6 +68,7 @@ export const getAllReports = async (req: Request, res: Response) => {
     res.status(500).json({ error: "Failed to fetch reports" });
   }
 };
+
 // GET /api/reports/:id - View single report if owned by user
 export const getReportById = async (req: any, res: Response) => {
   try {
@@ -96,7 +125,7 @@ export const createReport = async (req: any, res: Response) => {
         type,
         category: title,
         createdBy: userId,
-        status: "scheduled",
+        status: "in_progress",
         date: new Date(),
       },
     });

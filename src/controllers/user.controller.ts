@@ -30,7 +30,7 @@ export const inviteUser = async (req: any, res: Response) => {
     if (role === "admin") {
       homeId = generateHomeId();
     } else {
-      const currentUser = req.body;
+      const currentUser = req.user;
 
       if (currentUser?.homeId) {
         homeId = currentUser.homeId;
@@ -42,9 +42,9 @@ export const inviteUser = async (req: any, res: Response) => {
     }
 
     const defaultPassword =
-      role === "admin "
+      role === "admin"
         ? await bcrypt.hash("Admin@ofsted$123", 10)
-        : await bcrypt.hash("User@ofsted$123", 10);
+        : await bcrypt.hash("Ofsted$123", 10);
 
     const user = await prisma.user.create({
       data: {
@@ -84,15 +84,34 @@ export const inviteUser = async (req: any, res: Response) => {
 };
 
 // Get all users
-export const getUsers = async (req: Request, res: Response) => {
+export const getUsers = async (req: any, res: Response) => {
   const page = parseInt(req.query.page as string) || 1;
   const limit = parseInt(req.query.limit as string) || 5;
   const skip = (page - 1) * limit;
 
+  const currentUser = req.user; // Assumes middleware injects user
+
+  if (!currentUser || currentUser.role !== "admin") {
+    return res.status(403).json({ error: "Access denied" });
+  }
+
   try {
     const [totalUsers, users] = await Promise.all([
-      prisma.user.count(),
+      prisma.user.count({
+        where: {
+          homeId: currentUser.homeId,
+          role: {
+            in: ["staff", "readonly"],
+          },
+        },
+      }),
       prisma.user.findMany({
+        where: {
+          homeId: currentUser.homeId,
+          role: {
+            in: ["staff", "readonly"],
+          },
+        },
         skip,
         take: limit,
         orderBy: { createdAt: "desc" },
@@ -101,7 +120,7 @@ export const getUsers = async (req: Request, res: Response) => {
 
     const totalPages = Math.ceil(totalUsers / limit);
 
-    res.status(200).json({
+    return res.status(200).json({
       currentPage: page,
       totalPages,
       totalUsers,
@@ -109,9 +128,10 @@ export const getUsers = async (req: Request, res: Response) => {
     });
   } catch (err) {
     console.error("Get users error:", err);
-    res.status(500).json({ error: "Server error" });
+    return res.status(500).json({ error: "Server error" });
   }
 };
+
 
 // Update user
 export const updateUser = async (req: Request, res: Response) => {

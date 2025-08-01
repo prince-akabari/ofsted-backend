@@ -47,28 +47,48 @@ export const createStaff = async (req: Request, res: Response) => {
 
 export const getAllStaff = async (req: Request, res: Response) => {
   try {
-    const user = (req as any).user; // { email, role }
+    const user = (req as any).user; // { email, role, homeId }
 
     let staff;
 
-    // Role-based filtering
     if (user.role === "staff") {
+      // Staff can only view their own record
       staff = await prisma.staff.findMany({
         where: {
           email: user.email,
         },
         orderBy: { createdAt: "desc" },
       });
-    } else {
+    } else if (user.role === "admin" || user.role === "readonly") {
+      // Get staff where staff.email has a user record with same homeId
+      const relatedUsers = await prisma.user.findMany({
+        where: {
+          homeId: user.homeId,
+          role: "staff",
+        },
+        select: { email: true },
+      });
+
+      const staffEmails = relatedUsers.map((u) => u.email);
+
       staff = await prisma.staff.findMany({
+        where: {
+          email: { in: staffEmails },
+        },
         orderBy: { createdAt: "desc" },
       });
+    } else {
+      return res.status(403).json({ error: "Access denied" });
     }
 
     const total = staff.length;
-    const fullyCompliant = staff.filter((s) => s.status === "compliant").length;
-    const attentionNeeded = staff.filter((s) => s.status === "warning").length;
-    const overdue = staff.filter((s) => s.status === "overdue").length;
+    const fullyCompliant = staff.filter(
+      (s: any) => s.status === "compliant"
+    ).length;
+    const attentionNeeded = staff.filter(
+      (s: any) => s.status === "warning"
+    ).length;
+    const overdue = staff.filter((s: any) => s.status === "overdue").length;
 
     const overallCompliance =
       total > 0 ? Math.round((fullyCompliant / total) * 100) : 0;

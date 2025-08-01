@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import prisma from "../config/db";
 import path from "path";
 import fs from "fs";
+import moment from "moment";
 
 // Add a checklist item
 export const addAuditChecklist = async (req: Request, res: Response) => {
@@ -41,29 +42,61 @@ export const getAuditChecklists = async (req: Request, res: Response) => {
   try {
     const user = (req as any).user;
 
-    let staffId: string | undefined;
+    let checklistWhereClause: any = {};
 
-    // If the user is staff, get their staff ID
     if (user.role === "staff") {
+      // Find staff ID by email
       const staff = await prisma.staff.findUnique({
         where: { email: user.email },
         select: { id: true },
       });
 
       if (!staff) {
-        return res.status(404).json({ message: "Staff record not found" });
+        return res.status(404).json({ message: "Staff not found" });
       }
 
-      staffId = staff.id;
+      // Filter only assigned to this staff
+      checklistWhereClause.assignedTo = staff.id;
+
+    } else if (user.role === "admin" || user.role === "readonly") {
+      // Step 1: Get current user's homeId
+      const currentUser = await prisma.user.findUnique({
+        where: { email: user.email },
+        select: { homeId: true },
+      });
+
+      if (!currentUser || !currentUser.homeId) {
+        return res.status(404).json({ message: "User homeId not found" });
+      }
+
+      // Step 2: Get all users in the same home
+      const homeUsers = await prisma.user.findMany({
+        where: { homeId: currentUser.homeId },
+        select: { email: true },
+      });
+
+      const homeEmails = homeUsers.map((u) => u.email);
+
+      // Step 3: Find all staff whose email is in that home
+      const homeStaff = await prisma.staff.findMany({
+        where: {
+          email: { in: homeEmails },
+        },
+        select: { id: true },
+      });
+
+      const homeStaffIds = homeStaff.map((s) => s.id);
+
+      checklistWhereClause.assignedTo = { in: homeStaffIds };
     }
 
-    // Filter: if staff, only show items assigned to them
+    // Step 4: Fetch checklists with applied filter
     const checklistItems = await prisma.auditChecklist.findMany({
-      where: staffId ? { assignedTo: staffId } : {}, // 👈 Filter only if staff
+      where: checklistWhereClause,
       orderBy: { createdAt: "desc" },
     });
 
-    // Populate assigned staff details
+    // Step 5: Populate assigned staff info
     const populated = await Promise.all(
       checklistItems.map(async (item) => {
         const staff = item.assignedTo
@@ -76,16 +109,19 @@ export const getAuditChecklists = async (req: Request, res: Response) => {
         return {
           ...item,
           assignedTo: staff,
+          formattedDate: moment(item.createdAt).format("YYYY-MM-DD HH:mm"),
         };
       })
     );
 
     return res.status(200).json({ auditChecklist: populated });
+
   } catch (error) {
     console.error("[Get Checklist Error]", error);
     return res.status(500).json({ message: "Failed to fetch checklist items" });
   }
 };
+
 
 export const editAuditChecklist = async (req: Request, res: Response) => {
   const { id } = req.params;
@@ -220,7 +256,9 @@ export const uploadAuditEvidence = async (req: Request, res: Response) => {
         data: { evidence: [] },
       });
 
-      return res.status(200).json({ message: "All evidence removed successfully." });
+      return res
+        .status(200)
+        .json({ message: "All evidence removed successfully." });
     }
 
     // New evidence files uploaded
@@ -241,4 +279,3 @@ export const uploadAuditEvidence = async (req: Request, res: Response) => {
     return res.status(500).json({ message: "Server error" });
   }
 };
-

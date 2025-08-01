@@ -21,9 +21,11 @@ model User {
   role      Role
   status    String   @default("inactive")
   lastLogin DateTime?
+  homeId    String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
 
 model Staff {
   id                          String   @id @default(uuid())
@@ -35,13 +37,16 @@ model Staff {
   dbsExpiryDate               DateTime
   trainingSafeguardingStatus String
   trainingSafeguardingDate   DateTime?
-  trainingFirstAidStatus      String
-  trainingFirstAidDate        DateTime?
-  trainingMedicationStatus    String
-  trainingMedicationDate      DateTime?
-  createdAt                   DateTime @default(now())
-  updatedAt                   DateTime @updatedAt
+  trainingFirstAidStatus     String
+  trainingFirstAidDate       DateTime?
+  trainingMedicationStatus   String
+  trainingMedicationDate     DateTime?
+  trainingCertificates       Json?  
+  employmentHistory          Json?    
+  createdAt                  DateTime @default(now())
+  updatedAt                  DateTime @updatedAt
 }
+
 
 model Policy {
   id               String   @id @default(uuid())
@@ -53,6 +58,7 @@ model Policy {
   assignedStaff    String[] // text[] for PostgreSQL
   document         String?  // path or filename of uploaded document
   acknowledgements Int      @default(0)
+  acknowledgedStaff String[] @default([])
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 }
@@ -122,10 +128,5 @@ model Alert {
   date        DateTime
   status      String   @default("active")
   createdAt   DateTime @default(now())
+  staffId     String?
 }
-
-
-
-
-
-

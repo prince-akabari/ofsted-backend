@@ -4,12 +4,14 @@ import prisma from "../config/db";
 
 export const getAlerts = async (req: Request, res: Response) => {
   try {
-    const user = (req as any).user;
+    const user = (req as any).user; // includes email, role, homeId
+    const skip = parseInt(req.query.skip as string) || 0;
+    const take = parseInt(req.query.take as string) || 8;
 
-    let staffId: string | undefined;
+    let staffIds: string[] = [];
 
-    // If staff, get their ID
     if (user.role === "staff") {
+      // Fetch only their own staff ID
       const staff = await prisma.staff.findUnique({
         where: { email: user.email },
         select: { id: true },
@@ -19,15 +21,30 @@ export const getAlerts = async (req: Request, res: Response) => {
         return res.status(404).json({ message: "Staff not found" });
       }
 
-      staffId = staff.id;
+      staffIds = [staff.id];
+    } else {
+      // Admin/Readonly: fetch staff created under same homeId
+      const staffUsers = await prisma.user.findMany({
+        where: {
+          homeId: user.homeId,
+          role: "staff",
+        },
+        select: { email: true },
+      });
+
+      const staffEmails = staffUsers.map((u) => u.email);
+
+      const staffList = await prisma.staff.findMany({
+        where: { email: { in: staffEmails } },
+        select: { id: true },
+      });
+
+      staffIds = staffList.map((s) => s.id);
     }
 
-    const skip = parseInt(req.query.skip as string) || 0;
-    const take = parseInt(req.query.take as string) || 8;
+    // Build filtering clause
+    const whereClause = { staffId: { in: staffIds } };
 
-    const whereClause = staffId ? { staffId } : {};
-
-    // Fetch paginated alerts and counts in parallel
     const [alerts, totalCount, dangerCount, warningCount, infoCount] =
       await Promise.all([
         prisma.alert.findMany({
@@ -36,7 +53,7 @@ export const getAlerts = async (req: Request, res: Response) => {
           skip,
           take,
         }),
-        prisma.alert.count({ where: whereClause }), // Total (unfiltered)
+        prisma.alert.count({ where: whereClause }),
         prisma.alert.count({
           where: { ...whereClause, severity: "danger" },
         }),
@@ -48,7 +65,6 @@ export const getAlerts = async (req: Request, res: Response) => {
         }),
       ]);
 
-    // Format for frontend
     const formatted = alerts.map((alert) => ({
       id: alert.id,
       type: alert.severity.toLowerCase(),
@@ -73,7 +89,6 @@ export const getAlerts = async (req: Request, res: Response) => {
     return res.status(500).json({ message: "Internal server error" });
   }
 };
-
 
 export const dismissAlert = async (req: Request, res: Response) => {
   try {
