@@ -20,6 +20,7 @@ import { activityLogger } from "./middlewares/activityLogger";
 import "./jobs/alertGenerator";
 import alertRoutes from "./routes/alerts.routes";
 import activityLogRoutes from "./routes/activityLog.routes";
+import serverless from "serverless-http";
 
 dotenv.config();
 
@@ -69,7 +70,8 @@ app.use("/api/activity-logs", activityLogRoutes);
 
 
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () =>
-  console.log(chalk.blueBright(`Server running on port ${PORT}`))
-);
+// const PORT = process.env.PORT || 5000;
+// app.listen(PORT, () =>
+//   console.log(chalk.blueBright(`Server running on port ${PORT}`))
+// );
+export const handler = serverless(app);
