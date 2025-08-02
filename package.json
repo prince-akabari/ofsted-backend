@@ -8,7 +8,8 @@
     "reset": "npx prisma migrate reset",
     "dbpush": "npx prisma db push",
     "db": "npx prisma studio",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "npx ts-node-dev src/index.ts"
   },
   "keywords": [],
   "author": "",

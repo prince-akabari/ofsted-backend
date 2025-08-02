@@ -1,4 +1,0 @@
-INSERT INTO public."Report" (id,title,"type",category,"date",status,"createdBy","createdAt","updatedAt") VALUES
-	 ('2bbb47d3-b4cb-4929-a636-1b21c3640bc2','OFSTED Readiness Report','ofsted','OFSTED Readiness Report','2025-07-23 16:54:20.968','in_progress'::public."ReportStatus",'000dab1e-da94-4e92-b051-c64ed779dd24','2025-07-23 16:54:20.97','2025-07-25 18:04:00.493'),
-	 ('6f5bf962-403a-4791-9f62-02027f6f5130','OFSTED Readiness Report','ofsted','OFSTED Readiness Report','2025-07-25 02:01:20.443','in_progress'::public."ReportStatus",'000dab1e-da94-4e92-b051-c64ed779dd24','2025-07-25 02:01:20.445','2025-07-25 18:04:00.493'),
-	 ('0463fa87-86fd-4fc8-b63e-514c24407caf','Staff Compliance Summary','Staff','Staff Compliance Summary','2025-07-23 17:06:27.332','in_progress'::public."ReportStatus",'000dab1e-da94-4e92-b051-c64ed779dd24','2025-07-23 17:06:27.333','2025-07-25 18:04:00.493');

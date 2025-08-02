@@ -1,0 +1,3 @@
+INSERT INTO public."Policy" (id,title,category,"version","lastUpdated",status,"assignedStaff","document",acknowledgements,"createdAt","updatedAt","acknowledgedStaff") VALUES
+	 ('413bfa97-d3f2-4d78-9523-06c45d3b81b9','Safegu. Policy','Safeguarding & Protection','1.0','2025-08-27 18:30:00','medium','{cf25efd4-361d-42a6-a1a8-7a3d32679059}','1754032859137-test.pdf',1,'2025-08-01 07:20:59.153','2025-08-01 16:44:40.928','{cf25efd4-361d-42a6-a1a8-7a3d32679059}'),
+	 ('bae49ba1-7b42-4975-b178-19ca9564409a','Daily Living Policy Test','Daily Living & Care','1.0','2025-08-28 18:30:00','medium','{cf25efd4-361d-42a6-a1a8-7a3d32679059}','1754067998272-OFSTED--Compliance-Tool.pdf',0,'2025-08-01 17:06:38.795','2025-08-01 17:06:38.795','{}');

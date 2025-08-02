@@ -1,0 +1,5 @@
+INSERT INTO public."Report" (id,title,"type",category,"date",status,"createdBy","createdAt","updatedAt") VALUES
+	 ('6ae9e95a-357d-474f-9533-a65eeaccb13f','Staff Compliance Summary','Staff','Staff Compliance Summary','2025-08-01 16:20:30.042','scheduled'::public."ReportStatus",'4481e1d9-7a84-40b6-b29e-c6a83b2e6bbf','2025-08-01 16:20:30.046','2025-08-01 16:20:30.046'),
+	 ('b4a74beb-c5b5-4765-a7da-9cdf708a04ad','Audit Progress Report','audit','Audit Progress Report','2025-08-01 16:20:31.395','scheduled'::public."ReportStatus",'4481e1d9-7a84-40b6-b29e-c6a83b2e6bbf','2025-08-01 16:20:31.396','2025-08-01 16:20:31.396'),
+	 ('a7ab8a00-98a3-47f0-ad7a-a6dbfacc3790','Policy Compliance Report','policy','Policy Compliance Report','2025-08-01 16:20:32.448','scheduled'::public."ReportStatus",'4481e1d9-7a84-40b6-b29e-c6a83b2e6bbf','2025-08-01 16:20:32.449','2025-08-01 16:20:32.449'),
+	 ('352274d6-b689-4377-80c1-ad399ff06226','OFSTED Readiness Report','ofsted','OFSTED Readiness Report','2025-08-01 16:24:20.103','in_progress'::public."ReportStatus",'4481e1d9-7a84-40b6-b29e-c6a83b2e6bbf','2025-08-01 16:24:20.104','2025-08-01 16:24:20.104');

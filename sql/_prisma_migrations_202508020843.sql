@@ -9,3 +9,5 @@ INSERT INTO public._prisma_migrations (id,checksum,finished_at,migration_name,lo
 	 ('a76b5d01-ad3d-4809-a914-b0f42cbe433c','e4e74ae585d4ac763fb87df5cad7bbfb0e2e32919fd581527ec4c89efcb09e85','2025-07-22 22:58:05.22342+05:30','20250722172804_add_staff_id_to_alert',NULL,NULL,'2025-07-22 22:58:04.874233+05:30',1),
 	 ('5f5b4fc9-0719-4eb8-bd09-16920e2bbd76','99c5e7ca03fc81799ffd7801ec8d7bb5323ae243f20e5ffaa856d9854d929f8d','2025-07-25 08:31:22.483222+05:30','20250725030121_add_certificates_employment_fields',NULL,NULL,'2025-07-25 08:31:22.141689+05:30',1),
 	 ('82e7d300-9dd7-4401-9b46-7dd7ebc360d0','b97082aca7f1ad7cac9e0296f18621693ebf32a3eb6a2017e56c92b2d7a1ee16','2025-07-25 22:25:53.675207+05:30','20250725165552_add_acknowledged_staff',NULL,NULL,'2025-07-25 22:25:53.286357+05:30',1);
+INSERT INTO public._prisma_migrations (id,checksum,finished_at,migration_name,logs,rolled_back_at,started_at,applied_steps_count) VALUES
+	 ('1e6ce7d0-0991-4fe1-b450-be8a3935ba2d','92301a09d83f3285e3b579507a277f6f0885462b04a3ec04a0c020210345333d','2025-08-01 08:32:31.102014+05:30','20250801030230_add_home_id_to_user',NULL,NULL,'2025-08-01 08:32:30.682227+05:30',1);

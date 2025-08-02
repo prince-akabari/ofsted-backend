@@ -1,5 +1,0 @@
-INSERT INTO public."User" (id,"name",email,"password","role",status,"lastLogin","createdAt","updatedAt") VALUES
-	 ('5eb6ebaf-73f1-422a-a0c3-1b9efce69a4a','Read only','readonly@ofsted.com','$2b$10$yVtSrRe5K2cd3JhEzbO.E.U6TngP/acf.GN7Yy8LkG9gsAIQAFKkK','readonly'::public."Role",'active','2025-07-25 17:52:27.752','2025-07-18 03:36:55.35','2025-07-25 17:52:27.753'),
-	 ('973a84a6-0d28-4942-a968-2447606067fb','Staff User','staff@ofsted.com','$2b$10$bmQQ/8sXl94oq9ghfcM/je9XGywIIrhLKv35Fmg7IB5A52mil5dTu','staff'::public."Role",'active','2025-07-28 02:14:57.421','2025-07-22 16:37:22.058','2025-07-28 02:14:57.422'),
-	 ('ea0ef8d3-fff9-4ff7-87c8-68afa8a72ef1','Admin','admin@ofsted.com','$2b$10$Fkm.vcCqaBOUwp5mDyECD.fjYy6RHOQ7eOxke/k.y.bRNu/3RZG4K','admin'::public."Role",'active','2025-07-28 11:55:14.131','2025-07-18 03:36:02.853','2025-07-28 11:55:14.132'),
-	 ('000dab1e-da94-4e92-b051-c64ed779dd24','Prince Akabari','princeakabari123@gmail.com','$2b$10$Y/2t5rA4rIQbtl1ZijGZqew6qmqKJqEYQpMwzANB9B8a/Go/utuk.','admin'::public."Role",'active','2025-07-29 03:42:28.365','2025-07-16 10:13:29.579','2025-07-29 03:42:28.367');

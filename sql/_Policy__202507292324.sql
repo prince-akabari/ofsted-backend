@@ -1,3 +1,0 @@
-INSERT INTO public."Policy" (id,title,category,"version","lastUpdated",status,"assignedStaff","document",acknowledgements,"createdAt","updatedAt","acknowledgedStaff") VALUES
-	 ('4a3d6d64-4c05-4cf3-8742-b0b805cac57c','Safe Policy For the testing','Safeguarding & Protection','1.1','2025-07-09 18:30:00','high','{405f38db-e669-4a04-b2d2-1a298e9c7753}','1753460278254-4d0df054-9649-4707-aa1b-334310a441e5.pdf',1,'2025-07-25 16:17:58.266','2025-07-25 17:25:05.302','{405f38db-e669-4a04-b2d2-1a298e9c7753}'),
-	 ('8ad7f175-1c02-401c-9a27-c2d3a441acb9','Staffing Policy','Staffing & HR','0.1','2025-07-16 18:30:00','medium','{405f38db-e669-4a04-b2d2-1a298e9c7753}','1753669675004-invoice.pdf',0,'2025-07-28 02:27:55.012','2025-07-28 02:27:55.012','{}');
